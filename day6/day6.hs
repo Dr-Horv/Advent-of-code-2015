@@ -3,13 +3,14 @@
 import Data.List
 import Data.List.Split
 import Data.Char (isDigit)
+import Control.Monad.Par  
 
 main :: IO ()
 main = do 
     content <- readFile "input.txt"
     let ls = lines content
     let instructions = map parseInstruction ls
-    let g = createGrid instructions
+    let g = createGridPar instructions
     putStr . show $ countTrue g 
     return ()
 
@@ -41,6 +42,18 @@ createInstruction s f = (first_pos, second_pos, f)
 
 createGrid :: [Instruction] -> Grid
 createGrid is = chunksOf 1000 $ [ applyRelevantInstructions is (x,y) | x <- [0..999] , y <- [0..999] ]
+
+createGridPar :: [Instruction] -> Grid
+createGridPar is = chunksOf 1000 $ runPar $ do 
+    l1' <- spawnP [ applyRelevantInstructions is (x,y) | x <- [0..250] , y <- [0..250] ]
+    l2' <- spawnP [ applyRelevantInstructions is (x,y) | x <- [251..500] , y <- [251..500] ]
+    l3' <- spawnP [ applyRelevantInstructions is (x,y) | x <- [501..750] , y <- [501..750] ]
+    l4' <- spawnP [ applyRelevantInstructions is (x,y) | x <- [751..999] , y <- [751..999] ]
+    l1 <- get l1'
+    l2 <- get l2'
+    l3 <- get l3'
+    l4 <- get l4'
+    return $ l1 ++ l2 ++ l3 ++ l4
 
 applyRelevantInstructions :: [Instruction] -> Pos -> Int
 applyRelevantInstructions is p = foldl' apply 0 ris 
