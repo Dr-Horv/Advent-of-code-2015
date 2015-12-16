@@ -10,24 +10,24 @@ main :: IO ()
 main = do 
     content <- readFile "input.txt"
     let ls = lines content
-    putStrLn . show . length $ ls 
+    print . length $ ls 
     let wires = map parseLineToWire ls
     let context = foldl f emptyContext wires
-    putStrLn . show $ context
+    print context
     let c' = buildCircuit context wires 
-    putStrLn . show $ c'
-    putStrLn . show $ lookupVariable c' "a"
+    print c'
+    print $ lookupVariable c' "a"
     return ()
 
 main2 :: IO ()
 main2 = do 
     content <- readFile "input.txt"
     let ls = lines content
-    putStrLn . show . length $ ls 
+    print . length $ ls 
     let wires = map parseLineToWire ls
     let context = foldl f emptyContext wires
     let c' = buildCircuit context wires 
-    putStrLn . show $ case lookupVariable c' "a" of
+    print $ case lookupVariable c' "a" of
         Just v -> do    
             let newC = foldl f emptyContext wires
             let c'' = setConstToVar newC v "b"
@@ -74,8 +74,8 @@ parseWireType :: String -> String -> Wire
 parseWireType s v | "AND" `isInfixOf` s     = Gate (And (sToExp h) (sToExp l)) v
                   | "OR" `isInfixOf` s      = Gate (Or (sToExp h) (sToExp l)) v
                   | "NOT" `isInfixOf` s     = UnaryOp (Not l) v
-                  | "LSHIFT" `isInfixOf` s  = ShiftOperation (LSHIFT h ((read l) :: Int)) v
-                  | "RSHIFT" `isInfixOf` s  = ShiftOperation (RSHIFT h ((read l) :: Int)) v
+                  | "LSHIFT" `isInfixOf` s  = ShiftOperation (LSHIFT h (read l :: Int)) v
+                  | "RSHIFT" `isInfixOf` s  = ShiftOperation (RSHIFT h (read l :: Int)) v
                   | otherwise               = case maybeReadWord16 h of
                                                 Just i -> Const (read h :: Word16) v
                                                 Nothing -> Move h v 
