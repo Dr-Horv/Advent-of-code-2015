@@ -4,7 +4,7 @@ import Data.Bits
 import Data.List.Split
 import Data.Char (isSpace)
 import Data.List (isInfixOf)
-import Data.Maybe (listToMaybe)
+import Data.Maybe (listToMaybe, fromMaybe)
 
 main :: IO ()
 main = do 
@@ -62,14 +62,6 @@ type Context = Map.Map Var Word16
 emptyContext :: Context
 emptyContext = Map.fromList []
 
-
-
-example :: Context  
-example = Map.fromList   
-    [("x", 123),
-     ("y", 456)
-    ] 
-
 maybeReadWord16 :: String -> Maybe Word16
 maybeReadWord16 = fmap fst . listToMaybe . reads
 
@@ -103,40 +95,37 @@ trim = f . f
    where f = reverse . dropWhile isSpace
 
 applyWire :: Context -> Wire -> Context
-applyWire c (Gate g v)              = case applyGate c g of
-                                        Just i  -> setConstToVar c i v
-                                        Nothing -> c
-applyWire c (ShiftOperation o v)    = case applyShiftOp c o of
-                                        Just i  -> setConstToVar c i v
-                                        Nothing -> c 
-applyWire c (UnaryOp o v)           = case applyUnaryOp c o of
-                                        Just i  -> setConstToVar c i v
-                                        Nothing -> c
-applyWire c (Move v1 v2)            = case lookupVariable c v1 of
-                                        Just i  ->  setConstToVar c i v2
-                                        Nothing ->  c
+applyWire c (Gate g v)              = updateIfFound c (applyGate c g) v
+applyWire c (ShiftOperation o v)    = updateIfFound c (applyShiftOp c o) v 
+applyWire c (UnaryOp o v)           = updateIfFound c (applyUnaryOp c o) v
+applyWire c (Move v1 v2)            = updateIfFound c (lookupVariable c v1) v2
 applyWire c _                       = c
 
+updateIfFound :: Context -> Maybe Word16 -> Var -> Context
+updateIfFound c m v = case m of
+                        Just i  -> setConstToVar c i v
+                        Nothing -> c
+
 applyGate :: Context -> BinaryGate -> Maybe Word16
-applyGate c (And e1 e2) = case lookupExps c [e1, e2] of
-                                Just [v1, v2]   -> Just $ v1 .&. v2
-                                Nothing         -> Nothing
-applyGate c (Or e1 e2) = case lookupExps c [e1, e2] of
-                                Just [v1, v2]   -> Just $ v1 .|. v2
-                                Nothing         -> Nothing
+applyGate c (And e1 e2) = applyBinFun c [e1, e2] (.&.)
+applyGate c (Or e1 e2) = applyBinFun c [e1, e2] (.|.)
 
 applyShiftOp :: Context -> ShiftOp -> Maybe Word16
-applyShiftOp c (LSHIFT v n) = case lookupVariable c v of
-                                Just v' -> Just $ shiftL v' n
-                                Nothing -> Nothing
-applyShiftOp c (RSHIFT v n) = case lookupVariable c v of
-                                Just v' -> Just $ shiftR v' n
-                                Nothing -> Nothing
+applyShiftOp c (LSHIFT v n) = applyFun c v (`shiftL` n)
+applyShiftOp c (RSHIFT v n) = applyFun c v (`shiftR` n)
 
 applyUnaryOp :: Context -> UnOp -> Maybe Word16
-applyUnaryOp c (Not v) = case lookupVariable c v of
-                            Just v' -> Just $ complement v'
-                            Nothing -> Nothing
+applyUnaryOp c (Not v) = applyFun c v complement
+
+applyFun :: Context -> Var -> (Word16 -> Word16) -> Maybe Word16
+applyFun c v f = case lookupVariable c v of
+                    Just v' -> Just $ f v'
+                    Nothing -> Nothing 
+
+applyBinFun :: Context -> [Exp] -> (Word16 -> Word16 -> Word16) -> Maybe Word16
+applyBinFun c [e1, e2] f = case lookupExps c [e1, e2] of
+                                Just [v1, v2]   -> Just $ f v1 v2
+                                Nothing         -> Nothing
 
 setConstToVar :: Context -> Word16 -> Var -> Context
 setConstToVar c i v = Map.insertWith mf v i c
