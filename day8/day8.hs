@@ -1,9 +1,8 @@
-
-
+import Control.Monad (liftM)
 import Data.Char (isLetter)
 
 readInputLines :: String ->  IO [String]
-readInputLines f = readFile f >>= (\c -> (return . lines) c) 
+readInputLines f = liftM lines (readFile f)
 
 main :: IO ()
 main = do 
@@ -17,19 +16,6 @@ main2 = do
     print $ foldl secondIntMinusFirstInt 0 $ map calculateCodeAndEncodedSizes ls
     return ()
 
-main' :: IO ()
-main' = do
-    ls' <- readInputLines "example.txt"
-    let ls = [ls' !! 0]
-    print ls
-    let e = encode $ head ls
-    writeFile "derp.txt" $ unlines $ map encode ls'
-    print e
-    let mapped = map calculateCodeAndEncodedSizes ls'
-    print mapped
-    print $ foldl secondIntMinusFirstInt 0 $ mapped
-    return ()
-
 calculateMemoryAndCodeSizes :: String -> (String, Int, Int)
 calculateMemoryAndCodeSizes s = (s, calculateMemorySize s, calculateCodeSize s)
 
@@ -41,7 +27,7 @@ secondIntMinusFirstInt size (_, f, s) = size + (s - f)
 
 
 calculateMemorySize :: String -> Int
-calculateMemorySize s = f 0 s
+calculateMemorySize = f 0
     where
         f :: Int -> String -> Int
         f n []       = n
@@ -58,23 +44,17 @@ backslash = ['\\']
 escapedQuote :: String
 escapedQuote = '\\':quote
 
-escape :: String -> String
-escape s = '\\':s
-
 quote :: String
 quote = ['"']
 
 encode :: String -> String
-encode s = quote ++ (e s) ++ quote
-    where 
+encode s = quote ++ e s ++ quote
+    where
         e :: String -> String
-        e []     = [] 
-        e (c:cs) = case c of 
-                            '\\' -> if ((=='x') . head) cs 
-                                then  '\\':(escape . take 3) cs ++ e (drop 3 cs)
-                                else  escape [c] ++ e cs
-                            '"' -> escapedQuote ++ e cs
-                            c     -> c:(e cs)
+        e []         = []
+        e ('\\':cs)  = backslash ++ backslash ++ e cs
+        e ('"':cs)   = escapedQuote ++ e cs
+        e (c:cs)     = c:e cs
 
 calculateCodeSize :: String -> Int
 calculateCodeSize = length
