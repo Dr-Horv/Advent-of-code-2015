@@ -20,9 +20,11 @@ main2 = do
 main' :: IO ()
 main' = do
     ls' <- readInputLines "example.txt"
-    let ls = [ls' !! 3]
+    let ls = [ls' !! 0]
     print ls
-    print $ encode $ head ls
+    let e = encode $ head ls
+    writeFile "derp.txt" $ unlines $ map encode ls'
+    print e
     let mapped = map calculateCodeAndEncodedSizes ls'
     print mapped
     print $ foldl secondIntMinusFirstInt 0 $ mapped
@@ -50,8 +52,17 @@ calculateMemorySize s = f 0 s
                                 else f (n+1) (drop 1 cs)
                             c     -> f (n+1) cs
 
+backslash :: String
+backslash = ['\\']
+
+escapedQuote :: String
+escapedQuote = '\\':quote
+
+escape :: String -> String
+escape s = '\\':s
+
 quote :: String
-quote = '\\':['"']
+quote = ['"']
 
 encode :: String -> String
 encode s = quote ++ (e s) ++ quote
@@ -60,8 +71,9 @@ encode s = quote ++ (e s) ++ quote
         e []     = [] 
         e (c:cs) = case c of 
                             '\\' -> if ((=='x') . head) cs 
-                                then  quote ++ (take 3 cs) ++ e (drop 3 cs)
-                                else  quote ++ [c] ++ e cs
+                                then  '\\':(escape . take 3) cs ++ e (drop 3 cs)
+                                else  escape [c] ++ e cs
+                            '"' -> escapedQuote ++ e cs
                             c     -> c:(e cs)
 
 calculateCodeSize :: String -> Int
