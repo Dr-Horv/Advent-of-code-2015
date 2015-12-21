@@ -1,5 +1,5 @@
 
-
+import Data.List (group)
 
 main :: IO ()
 main = do 
@@ -8,14 +8,11 @@ main = do
 
 lookAndSay :: Int -> String -> String
 lookAndSay 0 s = s
-lookAndSay n s = lookAndSay (n-1) $ f s
-    
-f :: String -> String
-f []     = []
-f s@(c:cs) = (show count) ++ (c:f cs')
-    where
-        count = countChar c s
-        cs' = drop count s
+lookAndSay n s = lookAndSay (n-1) $ f' s
 
-countChar :: Char -> String -> Int
-countChar c s = length $ takeWhile (c==) s
+f' :: String -> String
+f' s = concat $ map m gs
+    where
+        gs = group s
+        m :: String -> String
+        m s = (show . length) s ++ [head s] 
