@@ -11,7 +11,7 @@ lookAndSay 0 s = s
 lookAndSay n s = lookAndSay (n-1) $ f' s
 
 f' :: String -> String
-f' s = concat $ map m gs
+f' s = concatMap m gs
     where
         gs = group s
         m :: String -> String
