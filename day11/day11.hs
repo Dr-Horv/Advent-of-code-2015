@@ -25,9 +25,9 @@ testPassword s = checkContainConsecetiveThreeChar s && containsTwoOcurrencesOFRe
 
 nextChar :: Char -> Char
 nextChar 'z' = 'a'
-nextChar c   = if length c' > 0 then head c' else error $ "nextChar got empty " ++ show c
+nextChar c   = if not (null c') then head c' else error $ "nextChar got empty " ++ show c
    where
-    c' = drop 1 $ dropWhile (not . (==c)) alphabeth' 
+    c' = drop 1 $ dropWhile (/=c) alphabeth' 
 
 nextPassword :: String -> String
 nextPassword "zzzzzzzz" = error "Exausted all passwords"
@@ -44,9 +44,7 @@ containsTwoOcurrencesOFRepeatedLetter :: String -> Bool
 containsTwoOcurrencesOFRepeatedLetter s = ((>=2) . length) $ filter ((>1) . length) $ group s
 
 checkContainConsecetiveThreeChar :: String -> Bool
-checkContainConsecetiveThreeChar s = if length s >= 3 
-                                        then c s || checkRest
-                                        else False
+checkContainConsecetiveThreeChar s = (length s >= 3) && (c s || checkRest)
     where
         checkRest = checkContainConsecetiveThreeChar $ tail s
         c :: String -> Bool
